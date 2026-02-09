@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Screen Color Picker</string>
+    <string name="screen_capture_permission_denied">Screen capture permission denied</string>
+    <string name="overlay_permission">Overlay Permission</string>
+    <string name="overlay_permission_description">Please grant \"Draw over other apps\" permission for \"Screen Color Picker\" app</string>
+    <string name="grant">Grant</string>
+    <string name="cancel">Cancel</string>
+    <string name="notification_permission">Notification Permission</string>
+    <string name="notification_permission_description">Please open permissions section of \"Screen Color Picker\" and grant notification permission</string>
+    <string name="color">Color</string>
+    <string name="coordinates">Coordinates</string>
+    <string name="copied">%1$s copied</string>
+    <string name="color_picker_active">Color Picker Active</string>
+</resources>
