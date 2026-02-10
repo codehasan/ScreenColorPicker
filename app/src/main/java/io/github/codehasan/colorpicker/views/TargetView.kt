@@ -16,7 +16,6 @@ class TargetView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    // Reusable array to avoid allocations in getScanOffset()
     private val locationArray = IntArray(2)
 
     init {

@@ -34,6 +34,8 @@ class MagnifierView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val clipPath = Path()
+
+    private val textPath = Path()
     private var zoomBitmap: Bitmap? = null
 
     private val gridShadowColor = Color.parseColor("#40000000")
@@ -247,9 +249,8 @@ class MagnifierView @JvmOverloads constructor(
         touchAngleDegrees: Double,
         touchRect: RectF
     ) {
-        val path = Path().apply {
-            addCircle(cx, cy, radius, Path.Direction.CW)
-        }
+        textPath.reset()
+        textPath.addCircle(cx, cy, radius, Path.Direction.CW)
 
         val textWidth = paint.measureText(text)
         val circumference = (2 * Math.PI * radius).toFloat()
@@ -263,7 +264,7 @@ class MagnifierView @JvmOverloads constructor(
 
         canvas.drawTextOnPath(
             text,
-            path,
+            textPath,
             startOffset,
             verticalOffset,
             paint
