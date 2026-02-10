@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.codehasan.colorpicker.extensions.canShowNotification
@@ -26,6 +27,12 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val REQUEST_CODE_NOTIFICATION = 262345
+        const val EXTRA_FROM_TILE = "from_tile"
+        private const val GITHUB_REPO_URL = "https://github.com/codehasan/ScreenColorPicker"
+    }
 
     private var fromTile = false
     private var stateObserverJob: Job? = null
@@ -75,9 +82,25 @@ class MainActivity : AppCompatActivity() {
             handleFabClick()
         }
 
-        observeServiceState()
+        val toolbar = findViewById<MaterialToolbar>(R.id.topAppBar)
+        toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.menu_github -> {
+                    openGitHubRepo()
+                    true
+                }
 
+                else -> false
+            }
+        }
+
+        observeServiceState()
         handleIntent(intent)
+    }
+
+    private fun openGitHubRepo() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_REPO_URL))
+        startActivity(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -226,10 +249,5 @@ class MainActivity : AppCompatActivity() {
                 setCancelable(false)
             }
             .show()
-    }
-
-    companion object {
-        private const val REQUEST_CODE_NOTIFICATION = 262345
-        const val EXTRA_FROM_TILE = "from_tile"
     }
 }
