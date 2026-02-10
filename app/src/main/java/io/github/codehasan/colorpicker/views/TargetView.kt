@@ -39,7 +39,7 @@ class TargetView @JvmOverloads constructor(
     fun getSafeCropSize(): Int {
         val size = min(width, height).toFloat()
         val holeDiameter = size * (holePercentage * 2)
-        return (holeDiameter * 0.45f).toInt().coerceAtLeast(8)
+        return (holeDiameter * 0.50f).toInt().coerceAtLeast(8)
     }
 
     override fun onDraw(canvas: Canvas) {
