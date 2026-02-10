@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Screen Color Picker</string>
+    <string name="app_name">Color Picker</string>
     <string name="screen_capture_permission_denied">Screen capture permission denied</string>
     <string name="overlay_permission">Overlay Permission</string>
     <string name="overlay_permission_description">Please grant \"Draw over other apps\" permission for \"Screen Color Picker\" app</string>
@@ -11,4 +11,11 @@
     <string name="coordinates">Coordinates</string>
     <string name="copied">%1$s copied</string>
     <string name="color_picker_active">Color Picker Active</string>
+
+    <!-- Preferences -->
+    <string name="pref_magnifier_size_title">Magnifier Size</string>
+    <string name="pref_capture_speed_title">Capture Speed</string>
+    <string name="pref_show_grid_lines_title">Show Grid Lines</string>
+    <string name="pref_show_grid_lines_summary">Display grid lines on magnifier</string>
+    <string name="start_color_picker">Start Color Picker</string>
 </resources>

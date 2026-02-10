@@ -7,7 +7,6 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.Button
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -16,9 +15,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.codehasan.colorpicker.extensions.canShowNotification
 import io.github.codehasan.colorpicker.extensions.showMessage
-import io.github.codehasan.colorpicker.ColorPickerService
+import io.github.codehasan.colorpicker.services.ColorPickerService
 
 class MainActivity : AppCompatActivity() {
 
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        findViewById<Button>(R.id.btn_start).setOnClickListener {
+        findViewById<FloatingActionButton>(R.id.fab_start).setOnClickListener {
             startColorPickerFlow()
         }
     }
