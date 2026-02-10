@@ -21,7 +21,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.codehasan.colorpicker.extensions.canShowNotification
 import io.github.codehasan.colorpicker.extensions.showMessage
 import io.github.codehasan.colorpicker.services.ColorPickerService
-import io.github.codehasan.colorpicker.services.ServiceState
+import io.github.codehasan.colorpicker.ServiceState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach

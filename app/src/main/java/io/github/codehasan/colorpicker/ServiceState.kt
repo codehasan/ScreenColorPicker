@@ -1,7 +1,8 @@
-package io.github.codehasan.colorpicker.services
+package io.github.codehasan.colorpicker
 
 import android.content.Context
 import android.content.Intent
+import io.github.codehasan.colorpicker.services.ColorPickerService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

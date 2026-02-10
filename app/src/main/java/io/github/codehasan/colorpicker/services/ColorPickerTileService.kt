@@ -9,6 +9,7 @@ import androidx.core.service.quicksettings.PendingIntentActivityWrapper
 import androidx.core.service.quicksettings.TileServiceCompat
 import io.github.codehasan.colorpicker.MainActivity
 import io.github.codehasan.colorpicker.R
+import io.github.codehasan.colorpicker.ServiceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
