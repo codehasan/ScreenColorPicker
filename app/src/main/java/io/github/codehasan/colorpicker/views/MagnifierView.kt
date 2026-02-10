@@ -36,11 +36,11 @@ class MagnifierView @JvmOverloads constructor(
     private val clipPath = Path()
     private var zoomBitmap: Bitmap? = null
 
-    // Constants
-    private val darkGridColor = "#1E1E1E".toColorInt()
-    private val lightGridColor = "#8B8C8E".toColorInt()
-    private val darkContrastColor = "#6C7A89".toColorInt()
-    private val lightContrastColor = "#C0C5CC".toColorInt()
+    private val gridShadowColor = Color.parseColor("#40000000")
+    private val gridMainColor = Color.parseColor("#80FFFFFF")
+
+    private val bezelBorderColor = Color.parseColor("#C0C0C0")
+
     private val darkTextColor = "#0F0F10".toColorInt()
     private val lightTextColor = "#F2F2F4".toColorInt()
 
@@ -83,13 +83,12 @@ class MagnifierView @JvmOverloads constructor(
         val textSizeLarge = size * 0.16f
 
         // Radii Configuration
-        // Max radius fits within view/2
         val maxRadius = size / 2f
         val rInner = maxRadius - bezelThickness
         val rOuter = maxRadius
         val rCenter = rInner + (bezelThickness / 2f)
 
-        // Calculate Adaptive Contrast Color
+        // Calculate Adaptive Text Color
         val parsedColor = try {
             hexColor.toColorInt()
         } catch (e: Exception) {
@@ -98,12 +97,9 @@ class MagnifierView @JvmOverloads constructor(
         val luminance = (0.299 * Color.red(parsedColor) +
                 0.587 * Color.green(parsedColor) +
                 0.114 * Color.blue(parsedColor)) / 255
-
-        val contrastColor = if (luminance > 0.6) darkContrastColor else lightContrastColor
         val textColor = if (luminance > 0.6) darkTextColor else lightTextColor
-        val gridColor = if (luminance > 0.6) darkGridColor else lightGridColor
 
-        // Draw Image Area (Clipped)
+        // Draw Image Area
         canvas.withSave {
             clipPath.reset()
             clipPath.addCircle(cx, cy, rInner, Path.Direction.CW)
@@ -134,47 +130,44 @@ class MagnifierView @JvmOverloads constructor(
 
                 drawBitmap(bmp, null, destRect, paint)
 
-                // Draw Grid
+                // Draw Dual-Layer Grid (Shadow + Main)
                 paint.style = Paint.Style.STROKE
-                paint.color = gridColor
-                paint.strokeWidth = size * 0.005f // Dynamic grid thickness
+                val gridBaseWidth = size * 0.005f
 
-                // Vertical Lines
-                var xPos = startX + pixelSize
-                while (xPos < destRect.right - 0.1f) {
-                    if (xPos > cx - rInner && xPos < cx + rInner) {
-                        drawLine(xPos, destRect.top, xPos, destRect.bottom, paint)
-                    }
-                    xPos += pixelSize
-                }
+                // Layer A: Grid Shadow (Thicker, Dark)
+                paint.color = gridShadowColor
+                paint.strokeWidth = gridBaseWidth * 1.5f
+                drawGridLines(canvas, startX, startY, pixelSize, destRect, cx, cy, rInner)
 
-                // Horizontal Lines
-                var yPos = startY + pixelSize
-                while (yPos < destRect.bottom - 0.1f) {
-                    if (yPos > cy - rInner && yPos < cy + rInner) {
-                        drawLine(destRect.left, yPos, destRect.right, yPos, paint)
-                    }
-                    yPos += pixelSize
-                }
+                // Layer B: Main Grid (Thin, Light)
+                paint.color = gridMainColor
+                paint.strokeWidth = gridBaseWidth
+                drawGridLines(canvas, startX, startY, pixelSize, destRect, cx, cy, rInner)
 
                 // Highlight Center Pixel
                 paint.color = textColor
                 paint.strokeWidth = size * 0.01f
                 val halfPixel = pixelSize / 2f
-                drawRect(cx - halfPixel, cy - halfPixel, cx + halfPixel, cy + halfPixel, paint)
+                drawRect(
+                    cx - halfPixel,
+                    cy - halfPixel,
+                    cx + halfPixel,
+                    cy + halfPixel,
+                    paint
+                )
             }
         }
 
-        // Draw Bezel Background
+        // Draw Main Bezel
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = bezelThickness
         paint.color = parsedColor
         canvas.drawCircle(cx, cy, rCenter, paint)
 
-        // Draw Bezel Borders
+        // Draw Bezel Borders (Grey)
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = size * 0.003f
-        paint.color = contrastColor
+        paint.color = bezelBorderColor
 
         // Inner Border
         canvas.drawCircle(cx, cy, rInner, paint)
@@ -213,6 +206,35 @@ class MagnifierView @JvmOverloads constructor(
             -90.0, 90.0,
             closeTouchRect
         )
+    }
+
+    private fun drawGridLines(
+        canvas: Canvas,
+        startX: Float,
+        startY: Float,
+        pixelSize: Float,
+        destRect: RectF,
+        cx: Float,
+        cy: Float,
+        rInner: Float
+    ) {
+        // Vertical Lines
+        var xPos = startX + pixelSize
+        while (xPos < destRect.right - 0.1f) {
+            if (xPos > cx - rInner && xPos < cx + rInner) {
+                canvas.drawLine(xPos, destRect.top, xPos, destRect.bottom, paint)
+            }
+            xPos += pixelSize
+        }
+
+        // Horizontal Lines
+        var yPos = startY + pixelSize
+        while (yPos < destRect.bottom - 0.1f) {
+            if (yPos > cy - rInner && yPos < cy + rInner) {
+                canvas.drawLine(destRect.left, yPos, destRect.right, yPos, paint)
+            }
+            yPos += pixelSize
+        }
     }
 
     private fun drawTextAtAngle(

@@ -33,7 +33,7 @@ class TargetView @JvmOverloads constructor(
      * Returns the size which can be safely captured without colliding
      * with the TargetView circles.
      */
-    fun getSafeCropSize() = 13
+    fun getSafeCropSize() = 12
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
