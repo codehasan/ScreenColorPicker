@@ -16,6 +16,7 @@ class TargetView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    private val holePercentage = 0.13f
     private val locationArray = IntArray(2)
 
     init {
@@ -31,10 +32,15 @@ class TargetView @JvmOverloads constructor(
     }
 
     /**
-     * Returns the size which can be safely captured without colliding
-     * with the TargetView circles.
+     * Returns the size which can be safely captured without including
+     * the TargetView's decorative circles.
+     * Calculated to fit within the center hole area.
      */
-    fun getSafeCropSize() = 12
+    fun getSafeCropSize(): Int {
+        val size = min(width, height).toFloat()
+        val holeDiameter = size * (holePercentage * 2)
+        return (holeDiameter * 0.6f).toInt().coerceAtLeast(8)
+    }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -47,7 +53,7 @@ class TargetView @JvmOverloads constructor(
         val mainStrokePct = 0.28f
         val outerStrokePct = 0.05f
 
-        val holeRadius = size * 0.13f
+        val holeRadius = size * holePercentage
 
         val thinWidth = size * thinStrokePct
         val mainWidth = size * mainStrokePct
