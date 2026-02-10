@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
@@ -32,6 +33,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
+import androidx.preference.PreferenceManager
 import io.github.codehasan.colorpicker.R
 import io.github.codehasan.colorpicker.views.MagnifierView
 import io.github.codehasan.colorpicker.views.TargetView
@@ -71,12 +73,41 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private var screenHeight = 0
 
     private val minGapBetweenEdges = 50
-    private val maxGapBetweenEdges = 100 // Maximum space allowed before "towing" starts
+    private val maxGapBetweenEdges = 100
 
-    private val magnifierSizeDp = 150
-    private val targetSizeDp = 40
+    // Cached preference values
+    private var captureDelayMs = 50L
+
+    // Preferences
+    private lateinit var sharedPreferences: SharedPreferences
+    private val preferenceChangeListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            when (key) {
+                PREF_MAGNIFIER_SIZE -> {
+                    if (::targetLayout.isInitialized && ::magnifierLayout.isInitialized) {
+                        removeWindows()
+                        setupWindows()
+                    }
+                }
+
+                PREF_CAPTURE_SPEED -> {
+                    captureDelayMs = getCaptureDelayMs()
+                }
+
+                PREF_SHOW_GRID_LINES -> {
+                    magnifierView.setShowGridLines(getShowGridLines())
+                }
+            }
+        }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
+        captureDelayMs = getCaptureDelayMs()
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -113,7 +144,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         screenHeight = h
 
         val targetSizePx = (targetSizeDp * displayMetrics.density).toInt()
-        val magnifierSizePx = (magnifierSizeDp * displayMetrics.density).toInt()
+        val magnifierSizePx = (getMagnifierSizeDp() * displayMetrics.density).toInt()
 
         // Create Target View
         targetLayout = FrameLayout(this)
@@ -137,6 +168,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         magnifierLayout = FrameLayout(this)
         magnifierView = MagnifierView(this)
         magnifierView.listener = this
+        magnifierView.setShowGridLines(getShowGridLines())
 
         magnifierLayout.addView(
             magnifierView,
@@ -165,6 +197,11 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
             )
             windowManager.updateViewLayout(magnifierLayout, magnifierParams)
         }
+    }
+
+    private fun removeWindows() {
+        if (::targetLayout.isInitialized) windowManager.removeView(targetLayout)
+        if (::magnifierLayout.isInitialized) windowManager.removeView(magnifierLayout)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -401,7 +438,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private fun captureLoop() {
         if (!isCapturing) return
         imageReader?.acquireLatestImage()?.let { processImage(it); it.close() }
-        handler.postDelayed({ captureLoop() }, 50)
+        handler.postDelayed({ captureLoop() }, captureDelayMs)
     }
 
     private fun processImage(image: Image) {
@@ -474,6 +511,8 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
         if (::targetLayout.isInitialized) windowManager.removeView(targetLayout)
         if (::magnifierLayout.isInitialized) windowManager.removeView(magnifierLayout)
+
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
         ServiceState.setColorPickerRunning(false)
     }
 
@@ -489,9 +528,40 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
             .build()
     }
 
+    // Preference getters
+    private fun getMagnifierSizeDp(): Int {
+        val size = sharedPreferences.getString(PREF_MAGNIFIER_SIZE, "small") ?: "small"
+        return when (size) {
+            "small" -> 150
+            "medium" -> 200
+            "large" -> 250
+            else -> 150
+        }
+    }
+
+    private fun getCaptureDelayMs(): Long {
+        val speed = sharedPreferences.getString(PREF_CAPTURE_SPEED, "normal") ?: "normal"
+        return when (speed) {
+            "fast" -> 25L
+            "normal" -> 50L
+            "slow" -> 100L
+            else -> 50L
+        }
+    }
+
+    private fun getShowGridLines(): Boolean {
+        return sharedPreferences.getBoolean(PREF_SHOW_GRID_LINES, true)
+    }
+
+    private val targetSizeDp = 40
+
     companion object {
         const val EXTRA_RESULT_CODE = "result_code"
         const val EXTRA_RESULT_DATA = "result_data"
         const val NOTIFICATION_ID = 1
+
+        const val PREF_MAGNIFIER_SIZE = "magnifier_size"
+        const val PREF_CAPTURE_SPEED = "capture_speed"
+        const val PREF_SHOW_GRID_LINES = "show_grid_lines"
     }
 }
