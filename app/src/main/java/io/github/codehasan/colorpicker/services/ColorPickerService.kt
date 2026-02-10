@@ -31,9 +31,11 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.IntentCompat.getParcelableExtra
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
 import androidx.preference.PreferenceManager
+import androidx.window.layout.WindowMetricsCalculator
 import io.github.codehasan.colorpicker.R
 import io.github.codehasan.colorpicker.views.MagnifierView
 import io.github.codehasan.colorpicker.views.TargetView
@@ -44,8 +46,13 @@ import kotlin.math.sqrt
 
 class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
-    private lateinit var windowManager: WindowManager
-    private lateinit var displayMetrics: DisplayMetrics
+    private val windowManager: WindowManager by lazy {
+        getSystemService(WINDOW_SERVICE) as WindowManager
+    }
+
+    private val clipboard: ClipboardManager by lazy {
+        getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+    }
 
     // Windows
     private lateinit var targetLayout: FrameLayout
@@ -69,13 +76,18 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     // Logic Variables
     private var scanX = 0
     private var scanY = 0
-    private var screenWidth = 0
-    private var screenHeight = 0
+    private var physicalScreenWidth = 0
+    private var physicalScreenHeight = 0
+    private var logicalScreenWidth = 0
+    private var logicalScreenHeight = 0
+    private var scaleX = 1f
+    private var scaleY = 1f
 
     private val minGapBetweenEdges = 50
     private val maxGapBetweenEdges = 100
 
     // Cached preference values
+    private val targetSizeDp = 40
     private var captureDelayMs = 50L
 
     // Preferences
@@ -121,7 +133,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         }
 
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED) ?: 0
-        val resultData = intent?.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
+        val resultData = intent?.let {
+            getParcelableExtra(intent, EXTRA_RESULT_DATA, Intent::class.java)
+        }
 
         if (resultCode == Activity.RESULT_OK && resultData != null) {
             ServiceState.setColorPickerRunning(true)
@@ -134,17 +148,34 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     }
 
     private fun setupWindows() {
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        // Get physical screen size for overlay positioning (overlays live in physical coordinate space)
+        val realMetrics = DisplayMetrics()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val windowMetrics = WindowMetricsCalculator.getOrCreate()
+                .computeCurrentWindowMetrics(this)
+            val bounds = windowMetrics.bounds
+            physicalScreenWidth = bounds.width()
+            physicalScreenHeight = bounds.height()
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getRealMetrics(realMetrics)
+            physicalScreenWidth = realMetrics.widthPixels
+            physicalScreenHeight = realMetrics.heightPixels
+        }
 
-        displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+        // Get logical screen size for image capture (MediaProjection captures logical screen)
+        val logicalMetrics = resources.displayMetrics
+        logicalScreenWidth = logicalMetrics.widthPixels
+        logicalScreenHeight = logicalMetrics.heightPixels
 
-        val (w, h) = getLogicalFullScreenSize()
-        screenWidth = w
-        screenHeight = h
+        // Calculate scale factor to convert from physical to logical coordinates
+        scaleX = logicalScreenWidth.toFloat() / physicalScreenWidth.toFloat()
+        scaleY = logicalScreenHeight.toFloat() / physicalScreenHeight.toFloat()
 
-        val targetSizePx = (targetSizeDp * displayMetrics.density).toInt()
-        val magnifierSizePx = (getMagnifierSizeDp() * displayMetrics.density).toInt()
+        // Use logical density for dp-to-px conversion
+        val logicalDensity = logicalMetrics.density
+        val targetSizePx = (targetSizeDp * logicalDensity).toInt()
+        val magnifierSizePx = (getMagnifierSizeDp() * logicalDensity).toInt()
 
         // Create Target View
         targetLayout = FrameLayout(this)
@@ -161,8 +192,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         targetParams.width = targetSizePx
         targetParams.height = targetSizePx
 
-        targetParams.x = (screenWidth - targetSizePx) / 2
-        targetParams.y = (screenHeight - targetSizePx) / 2
+        // Center in physical screen space (overlays use physical coordinates)
+        targetParams.x = (physicalScreenWidth - targetSizePx) / 2
+        targetParams.y = (physicalScreenHeight - targetSizePx) / 2
 
         // Create Magnifier View
         magnifierLayout = FrameLayout(this)
@@ -176,7 +208,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         )
 
         magnifierParams = createWindowLayoutParams()
-        magnifierParams.x = (screenWidth - magnifierSizePx) / 2
+        magnifierParams.x = (physicalScreenWidth - magnifierSizePx) / 2
         magnifierParams.y = targetParams.y - minGapBetweenEdges
 
         addTargetDragListener()
@@ -206,9 +238,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun addTargetDragListener() {
-        var initX = 0;
-        var initY = 0;
-        var touchX = 0f;
+        var initX = 0
+        var initY = 0
+        var touchX = 0f
         var touchY = 0f
 
         targetLayout.setOnTouchListener { _, event ->
@@ -307,7 +339,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
                     pLeft = (pCenterX - mRadius).toInt()
 
                     // Calculate Y: Align with Target Y, but clamp to screen bounds
-                    pTop = (ty - mRadius).toInt().coerceIn(0, screenHeight - mSize)
+                    pTop = (ty - mRadius).toInt().coerceIn(0, physicalScreenHeight - mSize)
                 }
                 // Case 2: Moving Vertically (Top or Bottom)
                 else {
@@ -316,12 +348,12 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
                     pTop = (pCenterY - mRadius).toInt()
 
                     // Calculate X: Align with Target X, but clamp to screen bounds
-                    pLeft = (tx - mRadius).toInt().coerceIn(0, screenWidth - mSize)
+                    pLeft = (tx - mRadius).toInt().coerceIn(0, physicalScreenWidth - mSize)
                 }
 
                 // Ensure the ENTIRE magnifier is within the screen (0 to width/height)
-                val fitsHorizontally = (pLeft >= 0) && ((pLeft + mSize) <= screenWidth)
-                val fitsVertically = (pTop >= 0) && ((pTop + mSize) <= screenHeight)
+                val fitsHorizontally = (pLeft >= 0) && ((pLeft + mSize) <= physicalScreenWidth)
+                val fitsVertically = (pTop >= 0) && ((pTop + mSize) <= physicalScreenHeight)
 
                 if (fitsHorizontally && fitsVertically) {
                     // Valid position found! Apply and return immediately.
@@ -377,6 +409,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun createWindowLayoutParams(
         width: Int = WindowManager.LayoutParams.WRAP_CONTENT
     ): WindowManager.LayoutParams {
@@ -393,23 +426,6 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         return params
     }
 
-    private fun getLogicalFullScreenSize(): Pair<Int, Int> {
-        val logicalMetrics = resources.displayMetrics
-
-        // If widths match, the device isn't scaling. Use real metrics to include system bars.
-        if (displayMetrics.widthPixels == logicalMetrics.widthPixels) {
-            return Pair(displayMetrics.widthPixels, displayMetrics.heightPixels)
-        }
-
-        // If different, the device is scaling. We must scale the 'Real' height
-        // down to match the 'Logical' width.
-        val scaleFactor =
-            logicalMetrics.widthPixels.toFloat() / displayMetrics.widthPixels.toFloat()
-        val scaledHeight = (displayMetrics.heightPixels * scaleFactor).toInt()
-
-        return Pair(logicalMetrics.widthPixels, scaledHeight)
-    }
-
     private fun updateScanCoordinates() {
         val offset = targetView.getScanOffset()
 
@@ -421,8 +437,10 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = mpManager.getMediaProjection(resultCode, resultData)
 
-        val (width, height) = getLogicalFullScreenSize()
-        val density = resources.displayMetrics.densityDpi
+        val logicalMetrics = resources.displayMetrics
+        val width = logicalMetrics.widthPixels
+        val height = logicalMetrics.heightPixels
+        val density = logicalMetrics.densityDpi
 
         imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         virtualDisplay = mediaProjection?.createVirtualDisplay(
@@ -463,8 +481,13 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
         bitmap.copyPixelsFromBuffer(buffer)
 
-        val safeX = scanX.coerceIn(0, bitmap.width - 1)
-        val safeY = scanY.coerceIn(0, bitmap.height - 1)
+        // Convert from physical screen coordinates to logical coordinates
+        // (overlay windows are in physical space, captured image is in logical space)
+        val logicalX = (scanX * scaleX).toInt().coerceIn(0, logicalScreenWidth - 1)
+        val logicalY = (scanY * scaleY).toInt().coerceIn(0, logicalScreenHeight - 1)
+
+        val safeX = logicalX.coerceIn(0, bitmap.width - 1)
+        val safeY = logicalY.coerceIn(0, bitmap.height - 1)
 
         val pixelColor = bitmap[safeX, safeY]
         val hexColor = String.format("#%06X", (0xFFFFFF and pixelColor))
@@ -494,10 +517,13 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         copyToClipboard(getString(R.string.coordinates), coords)
 
     private fun copyToClipboard(label: String, text: String) {
-        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText(label, text)
         clipboard.setPrimaryClip(clip)
-        Toast.makeText(this, getString(R.string.copied, label), Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            this,
+            getString(R.string.copied, label),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun onDestroy() {
@@ -519,8 +545,13 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private fun createNotification(): Notification {
         val channelId = "ColorPickerChannel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val chan = NotificationChannel(channelId, "Service", NotificationManager.IMPORTANCE_LOW)
-            getSystemService(NotificationManager::class.java).createNotificationChannel(chan)
+            val chan = NotificationChannel(
+                channelId,
+                "Service",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(chan)
         }
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.color_picker_active))
@@ -552,8 +583,6 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private fun getShowGridLines(): Boolean {
         return sharedPreferences.getBoolean(PREF_SHOW_GRID_LINES, true)
     }
-
-    private val targetSizeDp = 40
 
     companion object {
         const val EXTRA_RESULT_CODE = "result_code"

@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.preference)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.androidx.window)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
