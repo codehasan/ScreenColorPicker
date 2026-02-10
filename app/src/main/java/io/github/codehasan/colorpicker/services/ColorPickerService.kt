@@ -1,4 +1,4 @@
-package io.github.codehasan.colorpicker
+package io.github.codehasan.colorpicker.services
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -32,6 +32,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
+import io.github.codehasan.colorpicker.R
 import io.github.codehasan.colorpicker.views.MagnifierView
 import io.github.codehasan.colorpicker.views.TargetView
 import kotlin.math.atan2

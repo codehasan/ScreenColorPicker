@@ -27,7 +27,7 @@
         </activity>
 
         <service
-            android:name=".ColorPickerService"
+            android:name=".services.ColorPickerService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
