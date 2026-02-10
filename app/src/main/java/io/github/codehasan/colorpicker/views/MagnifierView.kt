@@ -157,6 +157,7 @@ class MagnifierView @JvmOverloads constructor(
                 }
 
                 // Highlight Center Pixel
+                paint.style = Paint.Style.STROKE
                 paint.color = textColor
                 paint.strokeWidth = size * 0.01f
                 val halfPixel = pixelSize / 2f
