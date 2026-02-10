@@ -1,6 +1,5 @@
 package io.github.codehasan.colorpicker.views
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -81,7 +80,6 @@ class MagnifierView @JvmOverloads constructor(
         }
     }
 
-    @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cx = width / 2f
@@ -93,15 +91,14 @@ class MagnifierView @JvmOverloads constructor(
         val textSizeLarge = size * 0.16f
 
         // Radii Configuration
-        val maxRadius = size / 2f
-        val rInner = maxRadius - bezelThickness
-        val rOuter = maxRadius
+        val rOuter = size / 2f
+        val rInner = rOuter - bezelThickness
         val rCenter = rInner + (bezelThickness / 2f)
 
         // Calculate Adaptive Text Color
         val parsedColor = try {
             hexColor.toColorInt()
-        } catch (e: Exception) {
+        } catch (_: IllegalArgumentException) {
             Color.BLACK
         }
         val luminance = (0.299 * Color.red(parsedColor) +
