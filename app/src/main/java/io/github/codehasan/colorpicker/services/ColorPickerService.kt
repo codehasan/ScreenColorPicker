@@ -60,6 +60,10 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private val handler = Handler(Looper.getMainLooper())
     private var isCapturing = false
 
+    private var screenBitmap: Bitmap? = null
+    private var bitmapWidth = 0
+    private var bitmapHeight = 0
+
     // Logic Variables
     private var scanX = 0
     private var scanY = 0
@@ -407,22 +411,34 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         val rowStride = planes[0].rowStride
         val rowPadding = rowStride - pixelStride * image.width
 
-        val screenBitmap = createBitmap(image.width + rowPadding / pixelStride, image.height)
-        screenBitmap.copyPixelsFromBuffer(buffer)
+        val requiredWidth = image.width + rowPadding / pixelStride
+        val requiredHeight = image.height
 
-        val safeX = scanX.coerceIn(0, screenBitmap.width - 1)
-        val safeY = scanY.coerceIn(0, screenBitmap.height - 1)
+        var bitmap = screenBitmap
+        if (bitmap == null || bitmap.width != requiredWidth || bitmap.height != requiredHeight) {
+            bitmap = createBitmap(requiredWidth, requiredHeight).also {
+                screenBitmap?.recycle()
+                screenBitmap = it
+                bitmapWidth = requiredWidth
+                bitmapHeight = requiredHeight
+            }
+        }
 
-        val pixelColor = screenBitmap[safeX, safeY]
+        bitmap.copyPixelsFromBuffer(buffer)
+
+        val safeX = scanX.coerceIn(0, bitmap.width - 1)
+        val safeY = scanY.coerceIn(0, bitmap.height - 1)
+
+        val pixelColor = bitmap[safeX, safeY]
         val hexColor = String.format("#%06X", (0xFFFFFF and pixelColor))
 
         val cropSize = targetView.getSafeCropSize()
 
-        val cropX = (safeX - cropSize / 2).coerceIn(0, screenBitmap.width - cropSize)
-        val cropY = (safeY - cropSize / 2).coerceIn(0, screenBitmap.height - cropSize)
+        val cropX = (safeX - cropSize / 2).coerceIn(0, bitmap.width - cropSize)
+        val cropY = (safeY - cropSize / 2).coerceIn(0, bitmap.height - cropSize)
 
         val croppedBitmap = Bitmap.createBitmap(
-            screenBitmap,
+            bitmap,
             cropX, cropY,
             cropSize, cropSize
         )
@@ -430,7 +446,6 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         handler.post {
             magnifierView.updateContent(croppedBitmap, hexColor, safeX, safeY)
         }
-        screenBitmap.recycle()
     }
 
     override fun onCloseClicked() = stopSelf()
@@ -453,6 +468,10 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         isCapturing = false
         virtualDisplay?.release()
         mediaProjection?.stop()
+
+        screenBitmap?.recycle()
+        screenBitmap = null
+
         if (::targetLayout.isInitialized) windowManager.removeView(targetLayout)
         if (::magnifierLayout.isInitialized) windowManager.removeView(magnifierLayout)
         ServiceState.setColorPickerRunning(false)
