@@ -12,7 +12,6 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
-import android.graphics.drawable.GradientDrawable
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.Image
@@ -23,6 +22,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -32,7 +32,6 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
-import androidx.core.graphics.toColorInt
 import io.github.codehasan.colorpicker.views.MagnifierView
 import io.github.codehasan.colorpicker.views.TargetView
 import kotlin.math.atan2
@@ -43,6 +42,7 @@ import kotlin.math.sqrt
 class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
     private lateinit var windowManager: WindowManager
+    private lateinit var displayMetrics: DisplayMetrics
 
     // Windows
     private lateinit var targetLayout: FrameLayout
@@ -69,7 +69,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private val maxGapBetweenEdges = 100 // Maximum space allowed before "towing" starts
 
     private val magnifierSizeDp = 150
-    private val targetSizeDp = 80
+    private val targetSizeDp = 40
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -98,13 +98,16 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
     private fun setupWindows() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        val metrics = android.util.DisplayMetrics()
-        windowManager.defaultDisplay.getRealMetrics(metrics)
-        screenWidth = metrics.widthPixels
-        screenHeight = metrics.heightPixels
 
-        val targetSizePx = (targetSizeDp * metrics.density).toInt()
-        val magnifierSizePx = (magnifierSizeDp * metrics.density).toInt()
+        displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getRealMetrics(displayMetrics)
+
+        val (w, h) = getLogicalFullScreenSize()
+        screenWidth = w
+        screenHeight = h
+
+        val targetSizePx = (targetSizeDp * displayMetrics.density).toInt()
+        val magnifierSizePx = (magnifierSizeDp * displayMetrics.density).toInt()
 
         // Create Target View
         targetLayout = FrameLayout(this)
@@ -135,9 +138,8 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         )
 
         magnifierParams = createWindowLayoutParams()
-        // Initial position doesn't matter, it will be auto-fixed below
-        magnifierParams.x = 0
-        magnifierParams.y = 0
+        magnifierParams.x = (screenWidth - magnifierSizePx) / 2
+        magnifierParams.y = targetParams.y - minGapBetweenEdges
 
         addTargetDragListener()
         addMagnifierFineTuneListener()
@@ -252,8 +254,8 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
             val distFromCenter = tRadius + gap + mRadius
 
             for (dir in directions) {
-                var pLeft = 0
-                var pTop = 0
+                var pLeft: Int
+                var pTop: Int
 
                 // Case 1: Moving Horizontally (Left or Right)
                 if (dir.first != 0) {
@@ -348,27 +350,40 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         return params
     }
 
+    private fun getLogicalFullScreenSize(): Pair<Int, Int> {
+        val logicalMetrics = resources.displayMetrics
+
+        // If widths match, the device isn't scaling. Use real metrics to include system bars.
+        if (displayMetrics.widthPixels == logicalMetrics.widthPixels) {
+            return Pair(displayMetrics.widthPixels, displayMetrics.heightPixels)
+        }
+
+        // If different, the device is scaling. We must scale the 'Real' height
+        // down to match the 'Logical' width.
+        val scaleFactor =
+            logicalMetrics.widthPixels.toFloat() / displayMetrics.widthPixels.toFloat()
+        val scaledHeight = (displayMetrics.heightPixels * scaleFactor).toInt()
+
+        return Pair(logicalMetrics.widthPixels, scaledHeight)
+    }
+
     private fun updateScanCoordinates() {
         val offset = targetView.getScanOffset()
 
-        // targetParams.x is the top-left of the window
-        scanX = (targetParams.x + offset.x).toInt()
-        scanY = (targetParams.y + offset.y).toInt()
+        scanX = offset.x.toInt()
+        scanY = offset.y.toInt()
     }
 
     private fun startScreenCapture(resultCode: Int, resultData: Intent) {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = mpManager.getMediaProjection(resultCode, resultData)
 
-        val metrics = android.util.DisplayMetrics()
-        windowManager.defaultDisplay.getRealMetrics(metrics)
-
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
+        val (width, height) = getLogicalFullScreenSize()
+        val density = resources.displayMetrics.densityDpi
 
         imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         virtualDisplay = mediaProjection?.createVirtualDisplay(
-            "ScreenCapture", width, height, metrics.densityDpi,
+            "ScreenCapture", width, height, density,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader!!.surface, null, null
         )

@@ -23,7 +23,11 @@ class TargetView @JvmOverloads constructor(
     /**
      * Returns the center point of the view.
      */
-    fun getScanOffset() = PointF(width / 2f, height / 2f)
+    fun getScanOffset(): PointF {
+        val offset = IntArray(2)
+        getLocationOnScreen(offset)
+        return PointF(offset[0] + (width / 2f), offset[1] + (height / 2f))
+    }
 
     /**
      * Returns the size which can be safely captured without colliding
