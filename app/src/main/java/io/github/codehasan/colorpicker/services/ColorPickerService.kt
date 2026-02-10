@@ -36,6 +36,8 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
 import androidx.preference.PreferenceManager
 import io.github.codehasan.colorpicker.R
+import io.github.codehasan.colorpicker.ServiceState
+import io.github.codehasan.colorpicker.extensions.dp2px
 import io.github.codehasan.colorpicker.views.MagnifierView
 import io.github.codehasan.colorpicker.views.TargetView
 import kotlin.math.atan2
@@ -53,9 +55,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
     }
 
-    private val displayMetrics: DisplayMetrics by lazy {
-        DisplayMetrics().also { windowManager.defaultDisplay.getRealMetrics(it) }
-    }
+    private lateinit var displayMetrics: DisplayMetrics
 
     // Windows
     private lateinit var targetLayout: FrameLayout
@@ -146,13 +146,26 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         return START_NOT_STICKY
     }
 
+    @Suppress("DEPRECATION")
     private fun setupWindows() {
+        displayMetrics = DisplayMetrics().also {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                    val metrics = windowManager.maximumWindowMetrics
+                    it.widthPixels = metrics.bounds.width()
+                    it.heightPixels = metrics.bounds.height()
+                }
+
+                else -> windowManager.defaultDisplay.getRealMetrics(it)
+            }
+        }
+
         val (w, h) = getLogicalFullScreenSize()
         screenWidth = w
         screenHeight = h
 
-        val targetSizePx = (targetSizeDp * displayMetrics.density).toInt()
-        val magnifierSizePx = (getMagnifierSizeDp() * displayMetrics.density).toInt()
+        val targetSizePx = dp2px(targetSizeDp.toFloat())
+        val magnifierSizePx = dp2px(getMagnifierSizeDp().toFloat())
 
         // Create Target View
         targetLayout = FrameLayout(this)
