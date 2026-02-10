@@ -38,12 +38,11 @@ class TargetView @JvmOverloads constructor(
 
         val size = min(width, height).toFloat()
 
-        val thinStrokePct = 0.01f
-        val mainStrokePct = 0.12f
-        val outerStrokePct = 0.025f
+        val thinStrokePct = 0.02f
+        val mainStrokePct = 0.28f
+        val outerStrokePct = 0.05f
 
-        // Radii calculations (percentages of total size)
-        val holeRadius = size * 0.06f
+        val holeRadius = size * 0.13f
 
         val thinWidth = size * thinStrokePct
         val mainWidth = size * mainStrokePct
