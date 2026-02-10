@@ -81,8 +81,8 @@
     </style>
 
     <style name="ToolbarTitleAppearance" parent="TextAppearance.Material3.TitleLarge">
-        <item name="fontFamily">@font/product_sans_bold</item>
-        <item name="android:fontFamily">@font/product_sans_bold</item>
+        <item name="fontFamily">@font/product_sans_medium</item>
+        <item name="android:fontFamily">@font/product_sans_medium</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 </resources>
