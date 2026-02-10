@@ -14,13 +14,21 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.codehasan.colorpicker.extensions.canShowNotification
 import io.github.codehasan.colorpicker.extensions.showMessage
 import io.github.codehasan.colorpicker.services.ColorPickerService
+import io.github.codehasan.colorpicker.services.ServiceState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 class MainActivity : AppCompatActivity() {
+
+    private var fromTile = false
+    private var stateObserverJob: Job? = null
 
     private val mediaProjectionManager by lazy {
         getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -31,6 +39,10 @@ class MainActivity : AppCompatActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             startColorPickerService(result.resultCode, result.data!!)
+            if (fromTile) {
+                moveTaskToBack(true)
+                fromTile = false
+            }
         } else {
             showMessage(R.string.screen_capture_permission_denied)
         }
@@ -40,7 +52,11 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (Settings.canDrawOverlays(this)) {
-            startColorPickerFlow()
+            if (fromTile) {
+                handleTileClick()
+            } else {
+                startColorPickerFlow()
+            }
         }
     }
 
@@ -54,8 +70,70 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        findViewById<FloatingActionButton>(R.id.fab_start).setOnClickListener {
+        val fab = findViewById<FloatingActionButton>(R.id.fab_start)
+        fab.setOnClickListener {
+            handleFabClick()
+        }
+
+        observeServiceState()
+
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stateObserverJob?.cancel()
+        stateObserverJob = null
+    }
+
+    private fun observeServiceState() {
+        stateObserverJob = ServiceState.isColorPickerRunning
+            .onEach { isRunning -> updateFabIcon(isRunning) }
+            .launchIn(lifecycleScope)
+    }
+
+    private fun updateFabIcon(isRunning: Boolean) {
+        val fab = findViewById<FloatingActionButton>(R.id.fab_start)
+        fab.setImageResource(
+            if (isRunning) R.drawable.ic_stop else R.drawable.ic_start
+        )
+    }
+
+    private fun handleIntent(intent: Intent) {
+        fromTile = intent.getBooleanExtra(EXTRA_FROM_TILE, false)
+        if (fromTile) {
+            handleTileClick()
+        }
+    }
+
+    private fun handleFabClick() {
+        val isRunning = ServiceState.isColorPickerRunning.value
+
+        if (isRunning) {
+            ServiceState.stopColorPickerService(this)
+        } else {
             startColorPickerFlow()
+        }
+    }
+
+    private fun handleTileClick() {
+        val isRunning = ServiceState.isColorPickerRunning.value
+
+        if (isRunning) {
+            // Service is already running, this should not happen since tile handles it
+            // But just in case, move to back
+            moveTaskToBack(true)
+        } else {
+            if (Settings.canDrawOverlays(this) && canShowNotification()) {
+                launchMediaProjection()
+            } else {
+                startColorPickerFlow()
+            }
         }
     }
 
@@ -68,7 +146,11 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             REQUEST_CODE_NOTIFICATION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startColorPickerFlow()
+                    if (fromTile) {
+                        handleTileClick()
+                    } else {
+                        startColorPickerFlow()
+                    }
                 } else {
                     showNotificationPermissionDeniedDialog()
                 }
@@ -147,6 +229,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val REQUEST_CODE_NOTIFICATION = 2345
+        private const val REQUEST_CODE_NOTIFICATION = 262345
+        const val EXTRA_FROM_TILE = "from_tile"
     }
 }

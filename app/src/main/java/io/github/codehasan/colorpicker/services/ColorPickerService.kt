@@ -89,6 +89,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         val resultData = intent?.getParcelableExtra<Intent>(EXTRA_RESULT_DATA)
 
         if (resultCode == Activity.RESULT_OK && resultData != null) {
+            ServiceState.setColorPickerRunning(true)
             setupWindows()
             startScreenCapture(resultCode, resultData)
         } else {
@@ -454,6 +455,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         mediaProjection?.stop()
         if (::targetLayout.isInitialized) windowManager.removeView(targetLayout)
         if (::magnifierLayout.isInitialized) windowManager.removeView(magnifierLayout)
+        ServiceState.setColorPickerRunning(false)
     }
 
     private fun createNotification(): Notification {
