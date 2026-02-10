@@ -16,6 +16,9 @@ class TargetView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    // Reusable array to avoid allocations in getScanOffset()
+    private val locationArray = IntArray(2)
+
     init {
         setBackgroundColor(Color.TRANSPARENT)
     }
@@ -24,9 +27,8 @@ class TargetView @JvmOverloads constructor(
      * Returns the center point of the view.
      */
     fun getScanOffset(): PointF {
-        val offset = IntArray(2)
-        getLocationOnScreen(offset)
-        return PointF(offset[0] + (width / 2f), offset[1] + (height / 2f))
+        getLocationOnScreen(locationArray)
+        return PointF(locationArray[0] + (width / 2f), locationArray[1] + (height / 2f))
     }
 
     /**
