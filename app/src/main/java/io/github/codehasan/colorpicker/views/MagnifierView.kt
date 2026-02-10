@@ -49,6 +49,7 @@ class MagnifierView @JvmOverloads constructor(
     // Properties (Dynamic)
     private var hexColor = "#000000"
     private var coords = "0, 0"
+    private var showGridLines = true
 
     // Touch Handling
     private var lastTouchX = 0f
@@ -71,6 +72,13 @@ class MagnifierView @JvmOverloads constructor(
         hexColor = color
         coords = "$x, $y"
         invalidate()
+    }
+
+    fun setShowGridLines(show: Boolean) {
+        if (showGridLines != show) {
+            showGridLines = show
+            invalidate()
+        }
     }
 
     @SuppressLint("DrawAllocation")
@@ -133,18 +141,20 @@ class MagnifierView @JvmOverloads constructor(
                 drawBitmap(bmp, null, destRect, paint)
 
                 // Draw Dual-Layer Grid (Shadow + Main)
-                paint.style = Paint.Style.STROKE
-                val gridBaseWidth = size * 0.005f
+                if (showGridLines) {
+                    paint.style = Paint.Style.STROKE
+                    val gridBaseWidth = size * 0.005f
 
-                // Layer A: Grid Shadow (Thicker, Dark)
-                paint.color = gridShadowColor
-                paint.strokeWidth = gridBaseWidth * 1.5f
-                drawGridLines(canvas, startX, startY, pixelSize, destRect, cx, cy, rInner)
+                    // Layer A: Grid Shadow (Thicker, Dark)
+                    paint.color = gridShadowColor
+                    paint.strokeWidth = gridBaseWidth * 1.5f
+                    drawGridLines(canvas, startX, startY, pixelSize, destRect, cx, cy, rInner)
 
-                // Layer B: Main Grid (Thin, Light)
-                paint.color = gridMainColor
-                paint.strokeWidth = gridBaseWidth
-                drawGridLines(canvas, startX, startY, pixelSize, destRect, cx, cy, rInner)
+                    // Layer B: Main Grid (Thin, Light)
+                    paint.color = gridMainColor
+                    paint.strokeWidth = gridBaseWidth
+                    drawGridLines(canvas, startX, startY, pixelSize, destRect, cx, cy, rInner)
+                }
 
                 // Highlight Center Pixel
                 paint.color = textColor
