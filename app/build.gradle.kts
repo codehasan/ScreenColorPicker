@@ -1,3 +1,4 @@
+import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -47,6 +48,15 @@ android {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+    }
+
+    applicationVariants.all {
+        this.outputs
+            .map { it as ApkVariantOutputImpl }
+            .forEach { output ->
+                var apkName = "Color Picker v${versionName}.apk"
+                output.outputFileName = apkName
+            }
     }
 }
 
