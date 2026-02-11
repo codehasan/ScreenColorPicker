@@ -36,6 +36,7 @@ import androidx.core.content.IntentCompat.getParcelableExtra
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
 import androidx.preference.PreferenceManager
+import androidx.window.layout.WindowMetricsCalculator
 import io.github.codehasan.colorpicker.R
 import io.github.codehasan.colorpicker.ServiceState
 import io.github.codehasan.colorpicker.extensions.dp2px
@@ -160,15 +161,10 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     @Suppress("DEPRECATION")
     private fun setupWindows() {
         displayMetrics = DisplayMetrics().also {
-            when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                    val bounds = windowManager.maximumWindowMetrics.bounds
-                    it.widthPixels = bounds.width()
-                    it.heightPixels = bounds.height()
-                }
-
-                else -> windowManager.defaultDisplay.getRealMetrics(it)
-            }
+            val metrics = WindowMetricsCalculator.getOrCreate()
+                .computeMaximumWindowMetrics(this)
+            it.widthPixels = metrics.bounds.width()
+            it.heightPixels = metrics.bounds.height()
         }
 
         val (w, h) = getLogicalFullScreenSize()
