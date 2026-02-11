@@ -47,7 +47,6 @@ class MagnifierView @JvmOverloads constructor(
 
     private val darkBorderColor = "#666666".toColorInt()
     private val lightBorderColor = "#999999".toColorInt()
-    private val borderShadowColor = "#30000000".toColorInt()
 
     // Properties (Dynamic)
     private var hexColor = "#000000"
@@ -184,7 +183,7 @@ class MagnifierView @JvmOverloads constructor(
         val borderWidth = size * 0.005f
         val borderInset = borderWidth * 0.5f  // Prevent anti-aliasing overflow
 
-        // Inner border - sits just inside rInner (outside bezel, on the inner side)
+        // Inner border
         paint.color = darkBorderColor
         paint.strokeWidth = borderWidth * 2f
         canvas.drawCircle(cx, cy, rInner - borderWidth - borderInset, paint)
@@ -193,7 +192,7 @@ class MagnifierView @JvmOverloads constructor(
         paint.strokeWidth = borderWidth
         canvas.drawCircle(cx, cy, rInner - borderWidth / 2f - borderInset, paint)
 
-        // Outer border - sits outside the bezel (not on top of it)
+        // Outer border
         paint.color = darkBorderColor
         paint.strokeWidth = borderWidth * 2f
         canvas.drawCircle(cx, cy, rOuter + borderWidth, paint)
