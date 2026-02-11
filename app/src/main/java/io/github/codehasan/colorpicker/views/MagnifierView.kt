@@ -45,8 +45,8 @@ class MagnifierView @JvmOverloads constructor(
     private val darkTextColor = "#0F0F10".toColorInt()
     private val lightTextColor = "#F2F2F4".toColorInt()
 
-    private val darkBorderColor = "#404040".toColorInt()
-    private val lightBorderColor = "#D0D0D0".toColorInt()
+    private val darkBorderColor = "#666666".toColorInt()
+    private val lightBorderColor = "#999999".toColorInt()
     private val borderShadowColor = "#30000000".toColorInt()
 
     // Properties (Dynamic)
@@ -94,8 +94,9 @@ class MagnifierView @JvmOverloads constructor(
         val textSizeNormal = size * 0.09f
         val textSizeLarge = size * 0.16f
 
-        // Radii Configuration
-        val rOuter = size / 2f
+        // Radii Configuration - leave ~4% margin to prevent clipping
+        val maxRadius = (size / 2f) * 0.96f
+        val rOuter = maxRadius
         val rInner = rOuter - bezelThickness
         val rCenter = rInner + (bezelThickness / 2f)
 
@@ -183,21 +184,23 @@ class MagnifierView @JvmOverloads constructor(
         val borderWidth = size * 0.005f
         val borderInset = borderWidth * 0.5f  // Prevent anti-aliasing overflow
 
-        // Dual-tone borders for visibility on any background
+        // Inner border - sits just inside rInner (outside bezel, on the inner side)
         paint.color = darkBorderColor
         paint.strokeWidth = borderWidth * 2f
-        canvas.drawCircle(cx, cy, rInner, paint)
-        canvas.drawCircle(cx, cy, rOuter - borderWidth - borderInset, paint)
+        canvas.drawCircle(cx, cy, rInner - borderWidth - borderInset, paint)
 
         paint.color = lightBorderColor
         paint.strokeWidth = borderWidth
-        canvas.drawCircle(cx, cy, rInner, paint)
-        canvas.drawCircle(cx, cy, rOuter - borderWidth * 2f - borderInset, paint)
+        canvas.drawCircle(cx, cy, rInner - borderWidth / 2f - borderInset, paint)
 
-        // Add slight shadow for depth
-        paint.color = borderShadowColor
+        // Outer border - sits outside the bezel (not on top of it)
+        paint.color = darkBorderColor
         paint.strokeWidth = borderWidth * 2f
-        canvas.drawCircle(cx, cy, rOuter - borderWidth * 2.5f - borderInset, paint)
+        canvas.drawCircle(cx, cy, rOuter + borderWidth, paint)
+
+        paint.color = lightBorderColor
+        paint.strokeWidth = borderWidth
+        canvas.drawCircle(cx, cy, rOuter + borderWidth * 1.5f, paint)
 
         // Draw Text Buttons
         paint.style = Paint.Style.FILL
