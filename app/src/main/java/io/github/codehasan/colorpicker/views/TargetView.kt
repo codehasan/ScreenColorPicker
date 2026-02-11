@@ -16,8 +16,31 @@ class TargetView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private val holePercentage = 0.13f
+    private var holePercentage = 0.13f
+    private var mainStrokePct = 0.28f
     private val locationArray = IntArray(2)
+
+    /**
+     * Sets the capture range which affects the hole size and inner circle size.
+     * @param range "small", "medium", or "large"
+     */
+    fun setCaptureRange(range: String) {
+        when (range) {
+            "small" -> {
+                holePercentage = 0.13f
+                mainStrokePct = 0.28f
+            }
+            "medium" -> {
+                holePercentage = 0.18f
+                mainStrokePct = 0.23f
+            }
+            "large" -> {
+                holePercentage = 0.23f
+                mainStrokePct = 0.18f
+            }
+        }
+        invalidate()
+    }
 
     init {
         setBackgroundColor(Color.TRANSPARENT)
@@ -50,7 +73,6 @@ class TargetView @JvmOverloads constructor(
         val size = min(width, height).toFloat()
 
         val thinStrokePct = 0.02f
-        val mainStrokePct = 0.28f
         val outerStrokePct = 0.05f
 
         val holeRadius = size * holePercentage
