@@ -24,6 +24,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -75,6 +76,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private var screenBitmap: Bitmap? = null
     private var bitmapWidth = 0
     private var bitmapHeight = 0
+
+    private var croppedBitmap: Bitmap? = null
+    private var croppedBitmapSize = 0
 
     // Logic Variables
     private var scanX = 0
@@ -143,9 +147,10 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         }
 
         if (resultCode == Activity.RESULT_OK && resultData != null) {
-            ServiceState.setColorPickerRunning(true)
             setupWindows()
             startScreenCapture(resultCode, resultData)
+            // Set state to true AFTER service is actually initialized
+            ServiceState.setColorPickerRunning(true)
         } else {
             stopSelf()
         }
@@ -253,10 +258,12 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
                     targetParams.x = initX + (event.rawX - touchX).toInt()
                     targetParams.y = initY + (event.rawY - touchY).toInt()
 
-                    checkDistanceAndRules()
+                    val magChanged = checkDistanceAndRules()
 
                     windowManager.updateViewLayout(targetLayout, targetParams)
-                    windowManager.updateViewLayout(magnifierLayout, magnifierParams)
+                    if (magChanged) {
+                        windowManager.updateViewLayout(magnifierLayout, magnifierParams)
+                    }
 
                     updateScanCoordinates()
                     true
@@ -267,7 +274,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         }
     }
 
-    private fun checkDistanceAndRules() {
+    private fun checkDistanceAndRules(): Boolean {
         val tSize = targetLayout.width
         val mSize = magnifierLayout.width // Assuming square
 
@@ -286,6 +293,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         val tRadius = tSize / 2f
         val mRadius = mSize / 2f
         val currentGap = centerDistance - tRadius - mRadius
+
+        val oldMagX = magnifierParams.x
+        val oldMagY = magnifierParams.y
 
         // RULE 1: TOWING (If gap > max, pull magnifier closer)
         if (currentGap > maxGapBetweenEdges) {
@@ -306,6 +316,8 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         if (currentGap < minGapBetweenEdges) {
             repositionMagnifier(tx, ty, tRadius, mSize)
         }
+
+        return magnifierParams.x != oldMagX || magnifierParams.y != oldMagY
     }
 
     private fun repositionMagnifier(tx: Float, ty: Float, tRadius: Float, mSize: Int) {
@@ -365,8 +377,11 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun addMagnifierFineTuneListener() {
-        var touchX = 0f;
+        var touchX = 0f
         var touchY = 0f
+        // Accumulate fractional movement for sub-pixel precision
+        var accumulatedX = 0f
+        var accumulatedY = 0f
 
         magnifierView.setOnTouchListener { view, event ->
             view.onTouchEvent(event) // Allow clicking buttons
@@ -375,6 +390,8 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
                 MotionEvent.ACTION_DOWN -> {
                     touchX = event.rawX
                     touchY = event.rawY
+                    accumulatedX = 0f
+                    accumulatedY = 0f
                     true
                 }
 
@@ -382,17 +399,30 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
                     val dx = event.rawX - touchX
                     val dy = event.rawY - touchY
 
-                    targetParams.x += (dx * 0.1f).toInt()
-                    targetParams.y += (dy * 0.1f).toInt()
+                    // Accumulate fractional movement
+                    accumulatedX += dx * 0.1f
+                    accumulatedY += dy * 0.1f
+
+                    // Apply integer portion, keep fractional part
+                    val moveX = accumulatedX.toInt()
+                    val moveY = accumulatedY.toInt()
+                    accumulatedX -= moveX
+                    accumulatedY -= moveY
+
+                    targetParams.x += moveX
+                    targetParams.y += moveY
 
                     // Check rules even during fine tuning to keep constraints valid
-                    checkDistanceAndRules()
+                    val magChanged = checkDistanceAndRules()
 
                     windowManager.updateViewLayout(targetLayout, targetParams)
-                    windowManager.updateViewLayout(
-                        magnifierLayout,
-                        magnifierParams
-                    ) // Update mag if towed
+                    // Only update magnifier if its position actually changed
+                    if (magChanged) {
+                        windowManager.updateViewLayout(
+                            magnifierLayout,
+                            magnifierParams
+                        ) // Update mag if towed
+                    }
                     updateScanCoordinates()
 
                     touchX = event.rawX
@@ -466,51 +496,68 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
     private fun captureLoop() {
         if (!isCapturing) return
-        imageReader?.acquireLatestImage()?.let { processImage(it); it.close() }
+        try {
+            imageReader?.acquireLatestImage()?.let { processImage(it) }
+        } catch (e: Exception) {
+            Log.e("ColorPickerService", "Failed to process image", e)
+        }
         handler.postDelayed({ captureLoop() }, captureDelayMs)
     }
 
     private fun processImage(image: Image) {
-        val planes = image.planes
-        val buffer = planes[0].buffer
-        val pixelStride = planes[0].pixelStride
-        val rowStride = planes[0].rowStride
-        val rowPadding = rowStride - pixelStride * image.width
+        try {
+            val planes = image.planes
+            val buffer = planes[0].buffer
+            val pixelStride = planes[0].pixelStride
+            val rowStride = planes[0].rowStride
+            val rowPadding = rowStride - pixelStride * image.width
 
-        val requiredWidth = image.width + rowPadding / pixelStride
-        val requiredHeight = image.height
+            val requiredWidth = image.width + rowPadding / pixelStride
+            val requiredHeight = image.height
 
-        var bitmap = screenBitmap
-        if (bitmap == null || bitmap.width != requiredWidth || bitmap.height != requiredHeight) {
-            bitmap = createBitmap(requiredWidth, requiredHeight).also {
-                screenBitmap?.recycle()
-                screenBitmap = it
-                bitmapWidth = requiredWidth
-                bitmapHeight = requiredHeight
+            var bitmap = screenBitmap
+            if (bitmap == null || bitmap.width != requiredWidth || bitmap.height != requiredHeight) {
+                bitmap = createBitmap(requiredWidth, requiredHeight).also {
+                    screenBitmap?.recycle()
+                    screenBitmap = it
+                    bitmapWidth = requiredWidth
+                    bitmapHeight = requiredHeight
+                }
             }
-        }
 
-        bitmap.copyPixelsFromBuffer(buffer)
+            bitmap.copyPixelsFromBuffer(buffer)
 
-        val safeX = scanX.coerceIn(0, bitmap.width - 1)
-        val safeY = scanY.coerceIn(0, bitmap.height - 1)
+            val safeX = scanX.coerceIn(0, bitmap.width - 1)
+            val safeY = scanY.coerceIn(0, bitmap.height - 1)
 
-        val pixelColor = bitmap[safeX, safeY]
-        val hexColor = String.format("#%06X", (0xFFFFFF and pixelColor))
+            val pixelColor = bitmap[safeX, safeY]
+            val hexColor = String.format("#%06X", (0xFFFFFF and pixelColor))
 
-        val cropSize = targetView.getSafeCropSize()
+            val cropSize = targetView.getSafeCropSize()
 
-        val cropX = (safeX - cropSize / 2).coerceIn(0, bitmap.width - cropSize)
-        val cropY = (safeY - cropSize / 2).coerceIn(0, bitmap.height - cropSize)
+            val cropX = (safeX - cropSize / 2).coerceIn(0, bitmap.width - cropSize)
+            val cropY = (safeY - cropSize / 2).coerceIn(0, bitmap.height - cropSize)
 
-        val croppedBitmap = Bitmap.createBitmap(
-            bitmap,
-            cropX, cropY,
-            cropSize, cropSize
-        )
+            // Reuse cropped bitmap to avoid allocation on every frame
+            var crop = croppedBitmap
+            if (crop == null || crop.width != cropSize || crop.height != cropSize) {
+                crop = createBitmap(cropSize, cropSize).also {
+                    croppedBitmap?.recycle()
+                    croppedBitmap = it
+                    croppedBitmapSize = cropSize
+                }
+            }
 
-        handler.post {
-            magnifierView.updateContent(croppedBitmap, hexColor, safeX, safeY)
+            // Extract just the crop region
+            val pixels = IntArray(cropSize * cropSize)
+            bitmap.getPixels(pixels, 0, cropSize, cropX, cropY, cropSize, cropSize)
+            crop.setPixels(pixels, 0, cropSize, 0, 0, cropSize, cropSize)
+
+            handler.post {
+                magnifierView.updateContent(crop, hexColor, safeX, safeY)
+            }
+        } finally {
+            image.close()
         }
     }
 
@@ -540,6 +587,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
         screenBitmap?.recycle()
         screenBitmap = null
+
+        croppedBitmap?.recycle()
+        croppedBitmap = null
 
         if (::targetLayout.isInitialized) windowManager.removeView(targetLayout)
         if (::magnifierLayout.isInitialized) windowManager.removeView(magnifierLayout)
