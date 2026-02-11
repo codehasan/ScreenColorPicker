@@ -11,11 +11,15 @@ object ServiceState {
     private val _isColorPickerRunning = MutableStateFlow(false)
     val isColorPickerRunning: StateFlow<Boolean> = _isColorPickerRunning.asStateFlow()
 
+    @Synchronized
     fun setColorPickerRunning(isRunning: Boolean) {
         _isColorPickerRunning.value = isRunning
     }
 
+    @Synchronized
     fun stopColorPickerService(context: Context) {
+        // Reset state immediately to prevent race conditions
+        _isColorPickerRunning.value = false
         context.stopService(Intent(context, ColorPickerService::class.java))
     }
 }
