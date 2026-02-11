@@ -31,12 +31,12 @@ class TargetView @JvmOverloads constructor(
                 mainStrokePct = 0.28f
             }
             "medium" -> {
-                holePercentage = 0.18f
-                mainStrokePct = 0.23f
+                holePercentage = 0.16f
+                mainStrokePct = 0.25f
             }
             "large" -> {
-                holePercentage = 0.23f
-                mainStrokePct = 0.18f
+                holePercentage = 0.19f
+                mainStrokePct = 0.22f
             }
         }
         invalidate()
