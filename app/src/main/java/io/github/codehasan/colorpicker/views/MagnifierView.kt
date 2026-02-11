@@ -245,20 +245,30 @@ class MagnifierView @JvmOverloads constructor(
         cy: Float,
         rInner: Float
     ) {
-        // Vertical Lines
+        val rSq = rInner * rInner
+
+        // Vertical Lines - calculate visible segment within circle
         var xPos = startX + pixelSize
         while (xPos < destRect.right - 0.1f) {
-            if (xPos > cx - rInner && xPos < cx + rInner) {
-                canvas.drawLine(xPos, destRect.top, xPos, destRect.bottom, paint)
+            // Calculate intersection with circle
+            val dx = xPos - cx
+            if (dx * dx < rSq) {
+                val halfChord = kotlin.math.sqrt(rSq - dx * dx)
+                // Only draw the visible segment within the circle
+                canvas.drawLine(xPos, cy - halfChord, xPos, cy + halfChord, paint)
             }
             xPos += pixelSize
         }
 
-        // Horizontal Lines
+        // Horizontal Lines - calculate visible segment within circle
         var yPos = startY + pixelSize
         while (yPos < destRect.bottom - 0.1f) {
-            if (yPos > cy - rInner && yPos < cy + rInner) {
-                canvas.drawLine(destRect.left, yPos, destRect.right, yPos, paint)
+            // Calculate intersection with circle
+            val dy = yPos - cy
+            if (dy * dy < rSq) {
+                val halfChord = kotlin.math.sqrt(rSq - dy * dy)
+                // Only draw the visible segment within the circle
+                canvas.drawLine(cx - halfChord, yPos, cx + halfChord, yPos, paint)
             }
             yPos += pixelSize
         }
