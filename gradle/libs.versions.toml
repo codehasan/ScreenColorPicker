@@ -11,6 +11,7 @@ activity = "1.12.2"
 constraintlayout = "2.2.1"
 preferences = "1.2.1"
 coroutines = "1.9.0"
+window = "1.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -24,6 +25,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 androidx-preference = { group = "androidx.preference", name = "preference-ktx", version.ref = "preferences" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version = "2.8.7" }
+androidx-window = { group = "androidx.window", name = "window", version.ref = "window" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
