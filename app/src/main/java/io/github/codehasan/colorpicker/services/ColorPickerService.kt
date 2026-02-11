@@ -480,6 +480,12 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         val mpManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = mpManager.getMediaProjection(resultCode, resultData)
 
+        mediaProjection?.registerCallback(object : MediaProjection.Callback() {
+            override fun onStop() {
+                stopSelf()
+            }
+        }, handler)
+
         val (width, height) = getLogicalFullScreenSize()
         val density = resources.displayMetrics.densityDpi
 
