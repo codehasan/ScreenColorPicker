@@ -6,6 +6,7 @@
         android:id="@+id/menu_github"
         android:icon="@drawable/ic_github"
         android:title="GitHub"
+        app:iconTint="?colorOnSurface"
         app:showAsAction="ifRoom" />
 
 </menu>

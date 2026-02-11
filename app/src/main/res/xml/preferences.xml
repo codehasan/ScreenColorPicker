@@ -34,6 +34,15 @@
         android:icon="@drawable/ic_grid"
         android:key="show_grid_lines"
         android:summary="@string/pref_show_grid_lines_summary"
-        android:title="@string/pref_show_grid_lines_title" />
+        android:title="@string/pref_show_grid_lines_title"
+        app:widgetLayout="@layout/layout_material_switch" />
+
+    <PreferenceCategory
+        android:title="Tips"
+        app:iconSpaceReserved="false">
+        <Preference
+            android:title="1. Both text and icon on the magnifier are clickable.\n2. Swipe on magnifier for precise fine-tuning.\n3. If your phone lags when picking colors, reduce capture speed."
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
 
 </androidx.preference.PreferenceScreen>
