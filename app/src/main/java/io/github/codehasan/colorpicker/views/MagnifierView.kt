@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.os.Build
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -67,6 +68,9 @@ class MagnifierView @JvmOverloads constructor(
 
     init {
         setBackgroundColor(Color.TRANSPARENT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            isForceDarkAllowed = false
+        }
     }
 
     fun updateContent(bitmap: Bitmap, color: String, x: Int, y: Int) {

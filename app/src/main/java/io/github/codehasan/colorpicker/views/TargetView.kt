@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PointF
+import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.graphics.toColorInt
@@ -30,10 +31,12 @@ class TargetView @JvmOverloads constructor(
                 holePercentage = 0.13f
                 mainStrokePct = 0.28f
             }
+
             "medium" -> {
                 holePercentage = 0.16f
                 mainStrokePct = 0.25f
             }
+
             "large" -> {
                 holePercentage = 0.19f
                 mainStrokePct = 0.22f
@@ -44,6 +47,9 @@ class TargetView @JvmOverloads constructor(
 
     init {
         setBackgroundColor(Color.TRANSPARENT)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            isForceDarkAllowed = false
+        }
     }
 
     /**
