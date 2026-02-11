@@ -1,9 +1,18 @@
-# ScreenColorPicker 🎨
+<div align="center">
+<img width="210" height="auto" src=".images/play_store_512.png" alt="Color Picker Logo" border="0">
+
+# Screen Color Picker
 
 A powerful Android app that lets you pick colors from anywhere on your screen in real-time. Perfect for designers, developers, and anyone who needs to extract color values quickly without taking screenshots.
 
-![Get it on GitHub](.images/get-it-on-github.png)
-![Play Store Badge](.images/play_store_512.png)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Android](https://img.shields.io/badge/Platform-Android%207%2B-green.svg)](https://www.android.com/)
+[![GitHub release](https://img.shields.io/github/v/release/codehasan/ScreenColorPicker?include_prereleases)](https://github.com/codehasan/ScreenColorPicker/releases/latest)
+
+[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt='Get it on Google Play' height="80">](https://play.google.com/store/apps/details?id=io.github.codehasan.colorpicker)
+[<img src=".images/get-it-on-github.png" alt='Get it on GitHub' height="80">](https://github.com/codehasan/ScreenColorPicker/releases/latest)
+
+</div>
 
 ## ✨ Features
 
@@ -14,11 +23,6 @@ A powerful Android app that lets you pick colors from anywhere on your screen in
 - **Copy to Clipboard**: Click to copy color hex codes or coordinates
 - **Customizable Settings**: Adjust magnifier size, capture speed, and more
 - **Overlay Support**: Works over other apps without interrupting your workflow
-
-## 📱 Download
-
-- **[Latest Release](/releases/latest)** - Download the latest APK
-- **Google Play Store** - Coming soon
 
 ## 🚀 How to Use
 
