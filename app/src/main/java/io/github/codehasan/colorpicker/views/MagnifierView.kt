@@ -1,5 +1,6 @@
 package io.github.codehasan.colorpicker.views
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -33,17 +34,20 @@ class MagnifierView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val clipPath = Path()
-
     private val textPath = Path()
+    private val destRect = RectF()
+
     private var zoomBitmap: Bitmap? = null
 
-    private val gridShadowColor = Color.parseColor("#40000000")
-    private val gridMainColor = Color.parseColor("#80FFFFFF")
-
-    private val bezelBorderColor = Color.parseColor("#C0C0C0")
+    private val gridShadowColor = "#40000000".toColorInt()
+    private val gridMainColor = "#80FFFFFF".toColorInt()
 
     private val darkTextColor = "#0F0F10".toColorInt()
     private val lightTextColor = "#F2F2F4".toColorInt()
+
+    private val darkBorderColor = "#404040".toColorInt()
+    private val lightBorderColor = "#D0D0D0".toColorInt()
+    private val borderShadowColor = "#30000000".toColorInt()
 
     // Properties (Dynamic)
     private var hexColor = "#000000"
@@ -129,7 +133,7 @@ class MagnifierView @JvmOverloads constructor(
                 val startX = cx - (totalDrawSize / 2f) - centerOffset
                 val startY = cy - (totalDrawSize / 2f) - centerOffset
 
-                val destRect = RectF(
+                destRect.set(
                     startX, startY,
                     startX + totalDrawSize,
                     startY + totalDrawSize
@@ -174,15 +178,26 @@ class MagnifierView @JvmOverloads constructor(
         paint.color = parsedColor
         canvas.drawCircle(cx, cy, rCenter, paint)
 
-        // Draw Bezel Borders (Grey)
+        // Draw Bezel Borders
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = size * 0.003f
-        paint.color = bezelBorderColor
+        val borderWidth = size * 0.005f
+        val borderInset = borderWidth * 0.5f  // Prevent anti-aliasing overflow
 
-        // Inner Border
+        // Dual-tone borders for visibility on any background
+        paint.color = darkBorderColor
+        paint.strokeWidth = borderWidth * 2f
         canvas.drawCircle(cx, cy, rInner, paint)
-        // Outer Border
-        canvas.drawCircle(cx, cy, rOuter - (paint.strokeWidth / 2f), paint)
+        canvas.drawCircle(cx, cy, rOuter - borderWidth - borderInset, paint)
+
+        paint.color = lightBorderColor
+        paint.strokeWidth = borderWidth
+        canvas.drawCircle(cx, cy, rInner, paint)
+        canvas.drawCircle(cx, cy, rOuter - borderWidth * 2f - borderInset, paint)
+
+        // Add slight shadow for depth
+        paint.color = borderShadowColor
+        paint.strokeWidth = borderWidth * 2f
+        canvas.drawCircle(cx, cy, rOuter - borderWidth * 2.5f - borderInset, paint)
 
         // Draw Text Buttons
         paint.style = Paint.Style.FILL
@@ -303,6 +318,7 @@ class MagnifierView @JvmOverloads constructor(
         )
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
