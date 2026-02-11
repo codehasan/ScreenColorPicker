@@ -38,10 +38,10 @@
         app:widgetLayout="@layout/layout_material_switch" />
 
     <PreferenceCategory
-        android:title="Tips"
+        android:title="@string/tips_label"
         app:iconSpaceReserved="false">
         <Preference
-            android:title="1. Both text and icon on the magnifier are clickable.\n2. Swipe on magnifier for precise fine-tuning.\n3. If your phone lags when picking colors, reduce capture speed."
+            android:title="@string/tips"
             app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
