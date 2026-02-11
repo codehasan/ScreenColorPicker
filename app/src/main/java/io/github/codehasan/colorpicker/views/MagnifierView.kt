@@ -74,7 +74,10 @@ class MagnifierView @JvmOverloads constructor(
     }
 
     fun updateContent(bitmap: Bitmap, color: String, x: Int, y: Int) {
+        val oldBitmap = zoomBitmap
         zoomBitmap = bitmap
+        oldBitmap?.recycle()
+
         hexColor = color
         coords = "$x, $y"
         invalidate()

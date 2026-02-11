@@ -78,9 +78,6 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
     private var bitmapWidth = 0
     private var bitmapHeight = 0
 
-    private var croppedBitmap: Bitmap? = null
-    private var croppedBitmapSize = 0
-
     // Logic Variables
     private var scanX = 0
     private var scanY = 0
@@ -540,17 +537,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
             val cropX = (safeX - cropSize / 2).coerceIn(0, bitmap.width - cropSize)
             val cropY = (safeY - cropSize / 2).coerceIn(0, bitmap.height - cropSize)
 
-            // Reuse cropped bitmap to avoid allocation on every frame
-            var crop = croppedBitmap
-            if (crop == null || crop.width != cropSize || crop.height != cropSize) {
-                crop = createBitmap(cropSize, cropSize).also {
-                    croppedBitmap?.recycle()
-                    croppedBitmap = it
-                    croppedBitmapSize = cropSize
-                }
-            }
-
-            // Extract just the crop region
+            val crop = createBitmap(cropSize, cropSize)
             val pixels = IntArray(cropSize * cropSize)
             bitmap.getPixels(pixels, 0, cropSize, cropX, cropY, cropSize, cropSize)
             crop.setPixels(pixels, 0, cropSize, 0, 0, cropSize, cropSize)
@@ -589,9 +576,6 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
 
         screenBitmap?.recycle()
         screenBitmap = null
-
-        croppedBitmap?.recycle()
-        croppedBitmap = null
 
         if (::targetLayout.isInitialized) windowManager.removeView(targetLayout)
         if (::magnifierLayout.isInitialized) windowManager.removeView(magnifierLayout)
