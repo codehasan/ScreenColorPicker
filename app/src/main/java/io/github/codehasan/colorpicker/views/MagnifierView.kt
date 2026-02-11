@@ -90,6 +90,12 @@ class MagnifierView @JvmOverloads constructor(
         }
     }
 
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        zoomBitmap?.recycle()
+        zoomBitmap = null
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cx = width / 2f
