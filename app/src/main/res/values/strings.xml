@@ -14,6 +14,7 @@
 
     <!-- Preferences -->
     <string name="pref_magnifier_size_title">Magnifier Size</string>
+    <string name="pref_capture_range_title">Capture Range</string>
     <string name="pref_capture_speed_title">Capture Speed</string>
     <string name="pref_show_grid_lines_title">Show Grid Lines</string>
     <string name="pref_show_grid_lines_summary">Display grid lines on magnifier</string>

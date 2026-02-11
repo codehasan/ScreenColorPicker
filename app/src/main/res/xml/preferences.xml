@@ -12,6 +12,15 @@
         app:useSimpleSummaryProvider="true" />
 
     <androidx.preference.ListPreference
+        android:defaultValue="small"
+        android:entries="@array/pref_capture_range_entries"
+        android:entryValues="@array/pref_capture_range_values"
+        android:icon="@drawable/ic_capture"
+        android:key="capture_range"
+        android:title="@string/pref_capture_range_title"
+        app:useSimpleSummaryProvider="true" />
+
+    <androidx.preference.ListPreference
         android:defaultValue="normal"
         android:entries="@array/pref_capture_speed_entries"
         android:entryValues="@array/pref_capture_speed_values"

@@ -12,6 +12,18 @@
         <item>small</item>
     </string-array>
 
+    <string-array name="pref_capture_range_entries">
+        <item>Large</item>
+        <item>Medium</item>
+        <item>Small</item>
+    </string-array>
+
+    <string-array name="pref_capture_range_values">
+        <item>large</item>
+        <item>medium</item>
+        <item>small</item>
+    </string-array>
+
     <string-array name="pref_capture_speed_entries">
         <item>Fast</item>
         <item>Normal</item>

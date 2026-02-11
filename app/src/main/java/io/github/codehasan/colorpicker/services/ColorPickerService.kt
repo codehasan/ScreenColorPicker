@@ -108,6 +108,12 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
                 PREF_SHOW_GRID_LINES -> {
                     magnifierView.setShowGridLines(getShowGridLines())
                 }
+
+                PREF_CAPTURE_RANGE -> {
+                    if (::targetView.isInitialized) {
+                        targetView.setCaptureRange(getCaptureRange())
+                    }
+                }
             }
         }
 
@@ -151,9 +157,9 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         displayMetrics = DisplayMetrics().also {
             when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                    val metrics = windowManager.maximumWindowMetrics
-                    it.widthPixels = metrics.bounds.width()
-                    it.heightPixels = metrics.bounds.height()
+                    val bounds = windowManager.maximumWindowMetrics.bounds
+                    it.widthPixels = bounds.width()
+                    it.heightPixels = bounds.height()
                 }
 
                 else -> windowManager.defaultDisplay.getRealMetrics(it)
@@ -170,6 +176,7 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         // Create Target View
         targetLayout = FrameLayout(this)
         targetView = TargetView(this)
+        targetView.setCaptureRange(getCaptureRange())
         targetLayout.addView(
             targetView,
             FrameLayout.LayoutParams(
@@ -583,6 +590,10 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         return sharedPreferences.getBoolean(PREF_SHOW_GRID_LINES, true)
     }
 
+    private fun getCaptureRange(): String {
+        return sharedPreferences.getString(PREF_CAPTURE_RANGE, "small") ?: "small"
+    }
+
     companion object {
         const val EXTRA_RESULT_CODE = "result_code"
         const val EXTRA_RESULT_DATA = "result_data"
@@ -591,5 +602,6 @@ class ColorPickerService : Service(), MagnifierView.OnInteractionListener {
         const val PREF_MAGNIFIER_SIZE = "magnifier_size"
         const val PREF_CAPTURE_SPEED = "capture_speed"
         const val PREF_SHOW_GRID_LINES = "show_grid_lines"
+        const val PREF_CAPTURE_RANGE = "capture_range"
     }
 }
