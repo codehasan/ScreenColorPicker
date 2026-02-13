@@ -17,7 +17,6 @@ import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.enableEdgeToEdge
@@ -25,6 +24,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -34,7 +34,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.codehasan.colorpicker.extensions.canShowNotification
 import io.github.codehasan.colorpicker.extensions.showMessage
 import io.github.codehasan.colorpicker.services.ColorPickerService
-import io.github.codehasan.colorpicker.ServiceState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -90,30 +89,24 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        val fab = findViewById<FloatingActionButton>(R.id.fab_start)
-        fab.setOnClickListener {
-            handleFabClick()
-        }
+        findViewById<FloatingActionButton>(R.id.fab_start)
+            .setOnClickListener { handleFabClick() }
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.topAppBar)
-        toolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.menu_github -> {
-                    openGitHubRepo()
-                    true
+        findViewById<MaterialToolbar>(R.id.topAppBar)
+            .setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.menu_github -> {
+                        val github = Intent(Intent.ACTION_VIEW, GITHUB_REPO_URL.toUri())
+                        startActivity(github)
+                        true
+                    }
+
+                    else -> false
                 }
-
-                else -> false
             }
-        }
 
         observeServiceState()
         handleIntent(intent)
-    }
-
-    private fun openGitHubRepo() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_REPO_URL))
-        startActivity(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -134,10 +127,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateFabIcon(isRunning: Boolean) {
-        val fab = findViewById<FloatingActionButton>(R.id.fab_start)
-        fab.setImageResource(
-            if (isRunning) R.drawable.ic_stop else R.drawable.ic_start
-        )
+        findViewById<FloatingActionButton>(R.id.fab_start)
+            .setImageResource(if (isRunning) R.drawable.ic_stop else R.drawable.ic_start)
     }
 
     private fun handleIntent(intent: Intent) {
@@ -181,7 +172,10 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
             REQUEST_CODE_NOTIFICATION -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                val isGranted = grantResults.isNotEmpty() &&
+                        grantResults[0] == PackageManager.PERMISSION_GRANTED;
+
+                if (isGranted) {
                     if (fromTile) {
                         handleTileClick()
                     } else {
@@ -228,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                 setPositiveButton(R.string.grant) { _, _ ->
                     val intent = Intent(
                         Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:$packageName")
+                        "package:$packageName".toUri()
                     )
                     overlayPermissionLauncher.launch(intent)
                 }
@@ -254,7 +248,7 @@ class MainActivity : AppCompatActivity() {
                 setPositiveButton(R.string.grant) { _, _ ->
                     val intent = Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.parse("package:$packageName")
+                        "package:$packageName".toUri()
                     )
                     startActivity(intent)
                 }
