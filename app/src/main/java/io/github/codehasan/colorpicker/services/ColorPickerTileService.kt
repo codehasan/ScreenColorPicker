@@ -13,6 +13,7 @@
  */
 package io.github.codehasan.colorpicker.services
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
@@ -51,6 +52,7 @@ class ColorPickerTileService : TileService() {
         serviceScope.cancel()
     }
 
+    @SuppressLint("WrongConstant")
     override fun onClick() {
         super.onClick()
         val isRunning = ServiceState.isColorPickerRunning.value
@@ -81,7 +83,7 @@ class ColorPickerTileService : TileService() {
         val tile = qsTile ?: return
         tile.state = if (isRunning) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.label = getString(R.string.app_name)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             tile.stateDescription =
                 if (isRunning) getString(R.string.running) else getString(R.string.stopped)
         }
