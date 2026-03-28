@@ -26,6 +26,17 @@ screenshots.
 - **Customizable Settings**: Adjust magnifier size, capture speed, and more
 - **Overlay Support**: Works over other apps without interrupting your workflow
 
+## 📸 Screenshots
+
+You can watch a video demo as well - [YouTube](https://youtube.com/shorts/EXXz2l9ck9Y)
+
+<div align="center">
+  <img src="./.images/screenshot_1.jpg" width="160" height="356" alt="Screenshot 1">
+  <img src="./.images/screenshot_2.jpg" width="160" height="356" alt="Screenshot 2">
+  <img src="./.images/screenshot_3.jpg" width="160" height="356" alt="Screenshot 3">
+  <img src="./.images/screenshot_4.jpg" width="160" height="356" alt="Screenshot 4">
+</div>
+
 ## 🚀 How to Use
 
 1. **Launch the app** from your home screen
